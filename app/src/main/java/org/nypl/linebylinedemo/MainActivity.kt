@@ -49,7 +49,7 @@ class MainActivity : AppCompatActivity() {
                 RelativeLayout.LayoutParams.MATCH_PARENT,
                 RelativeLayout.LayoutParams.MATCH_PARENT)
         // Disable scrolling.
-        this.webView.setOnTouchListener { v, event -> event.action == MotionEvent.ACTION_MOVE }
+        this.webView.setOnTouchListener { _, event -> event.action == MotionEvent.ACTION_MOVE }
         this.webView.loadUrl("file:///android_asset/example.html")
         layout.addView(this.webView)
 
