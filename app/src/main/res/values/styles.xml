@@ -1,8 +1,17 @@
 <resources>
 
-    <!-- Use `Theme.AppCompat.NoActionBar` for white text on dark backgrounds or
+    <!--
+    Use `Theme.AppCompat.NoActionBar` for white text on dark backgrounds or
     `Theme.AppCompat.Light.NoActionBar` for black text on light backgrounds.
-    Referenced colors appear in "colors.xml". -->
+
+    We should stick to these two themes because the app does not use the
+    new `Toolbar` for Android >5.X nor does it use the old `ActionBar`.
+    Instead, the app uses `android.support.v7.widget.Toolbar` which gives us
+    a modern looking toolbar that conforms to the material design guidelines,
+    even on pre-5.X devices.
+
+    Note: Referenced colors appear in "colors.xml" and should be changed there.
+    -->
     <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
         <!-- Toolbar background color -->
         <item name="colorPrimary">@color/colorPrimary</item>

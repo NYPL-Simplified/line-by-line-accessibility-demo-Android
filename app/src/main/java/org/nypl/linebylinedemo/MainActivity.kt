@@ -37,6 +37,7 @@ class MainActivity : AppCompatActivity() {
             TypedValue.complexToDimensionPixelOffset(
                 this.dataForThemeAttribute(R.attr.actionBarSize),
                 this.resources.displayMetrics))
+        // This must be set manually else the toolbar will not be shown.
         toolbar.setBackgroundColor(this.dataForThemeAttribute(R.attr.colorPrimary))
 
         return toolbar
