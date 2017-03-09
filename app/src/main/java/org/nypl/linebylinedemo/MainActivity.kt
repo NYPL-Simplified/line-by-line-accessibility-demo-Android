@@ -3,7 +3,6 @@ package org.nypl.linebylinedemo
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
-import android.view.MenuItem.SHOW_AS_ACTION_IF_ROOM
 import android.view.MotionEvent
 import android.webkit.WebView
 
@@ -29,11 +28,11 @@ class MainActivity : ToolbarActivity() {
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         this.previousMenuItem = menu.add("Previous")
-        this.previousMenuItem.setShowAsAction(SHOW_AS_ACTION_IF_ROOM)
+        this.previousMenuItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
         this.previousMenuItem.isEnabled = false
 
         this.nextMenuItem = menu.add("Next")
-        this.nextMenuItem.setShowAsAction(SHOW_AS_ACTION_IF_ROOM)
+        this.nextMenuItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
 
         return true
     }
