@@ -5,10 +5,7 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.MenuItem.SHOW_AS_ACTION_IF_ROOM
 import android.view.MotionEvent
-import android.view.View
-import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.webkit.WebView
-import android.widget.RelativeLayout
 
 class MainActivity : ToolbarActivity() {
 
@@ -18,16 +15,12 @@ class MainActivity : ToolbarActivity() {
 
     init {
         WebView.setWebContentsDebuggingEnabled(true)
-    } 
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         this.webView = WebView(this)
-        this.webView.id = View.generateViewId()
-        val webViewLayoutParams = RelativeLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
-        webViewLayoutParams.addRule(RelativeLayout.BELOW, this.toolbar.id)
-        this.webView.layoutParams = webViewLayoutParams
         // Disable scrolling.
         this.webView.setOnTouchListener { _, event -> event.action == MotionEvent.ACTION_MOVE }
         this.webView.loadUrl("file:///android_asset/example.html")
