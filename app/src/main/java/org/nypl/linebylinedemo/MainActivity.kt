@@ -4,6 +4,9 @@ import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.Toolbar
 import android.util.TypedValue
+import android.view.Menu
+import android.view.MenuItem
+import android.view.MenuItem.SHOW_AS_ACTION_IF_ROOM
 import android.view.MotionEvent
 import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
@@ -13,6 +16,8 @@ import android.widget.RelativeLayout
 class MainActivity : AppCompatActivity() {
 
     lateinit var webView: WebView
+    lateinit var previousMenuItem: MenuItem
+    lateinit var nextMenuItem: MenuItem
 
     init {
         WebView.setWebContentsDebuggingEnabled(true)
@@ -33,8 +38,6 @@ class MainActivity : AppCompatActivity() {
                 this.dataForThemeAttribute(R.attr.actionBarSize),
                 this.resources.displayMetrics))
         toolbar.setBackgroundColor(this.dataForThemeAttribute(R.attr.colorPrimary))
-        toolbar.setTitleTextColor(this.dataForThemeAttribute(R.attr.actionMenuTextColor))
-        toolbar.popupTheme = R.style.ThemeOverlay_AppCompat_ActionBar
 
         return toolbar
     }
@@ -58,5 +61,16 @@ class MainActivity : AppCompatActivity() {
         val toolbar = this.newToolbar()
         layout.addView(toolbar)
         this.setSupportActionBar(toolbar)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        this.previousMenuItem = menu.add("Previous")
+        this.previousMenuItem.setShowAsAction(SHOW_AS_ACTION_IF_ROOM)
+        this.previousMenuItem.isEnabled = false
+
+        this.nextMenuItem = menu.add("Next")
+        this.nextMenuItem.setShowAsAction(SHOW_AS_ACTION_IF_ROOM)
+
+        return true
     }
 }

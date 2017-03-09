@@ -1,12 +1,15 @@
 <resources>
 
-    <!-- Base application theme. -->
-    <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
-        <!-- Customize your theme here. -->
+    <!-- Use `Theme.AppCompat.NoActionBar` for white text on dark backgrounds or
+    `Theme.AppCompat.Light.NoActionBar` for black text on light backgrounds.
+    Referenced colors appear in "colors.xml". -->
+    <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
+        <!-- Toolbar background color -->
         <item name="colorPrimary">@color/colorPrimary</item>
+        <!-- Status bar background color -->
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <!-- Control color -->
         <item name="colorAccent">@color/colorAccent</item>
-        <item name="android:actionMenuTextColor">@color/actionMenuTextColor</item>
     </style>
 
 </resources>
