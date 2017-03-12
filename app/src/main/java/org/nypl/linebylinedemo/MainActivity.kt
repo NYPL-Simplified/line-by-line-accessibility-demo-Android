@@ -20,8 +20,9 @@ class MainActivity : ToolbarActivity() {
         super.onCreate(savedInstanceState)
 
         this.webView = WebView(this)
-        // Disable scrolling.
+        // Disable scrolling for demo purposes.
         this.webView.setOnTouchListener { _, event -> event.action == MotionEvent.ACTION_MOVE }
+        this.webView.settings.javaScriptEnabled = true
         this.webView.loadUrl("file:///android_asset/example.html")
         this.layout.addView(this.webView)
     }
