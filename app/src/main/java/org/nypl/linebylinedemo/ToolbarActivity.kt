@@ -4,7 +4,7 @@ import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.Toolbar
 import android.util.TypedValue
-import android.view.ViewGroup.LayoutParams.MATCH_PARENT
+import android.view.ViewGroup
 import android.widget.LinearLayout
 
 open class ToolbarActivity : AppCompatActivity() {
@@ -21,8 +21,8 @@ open class ToolbarActivity : AppCompatActivity() {
 
     fun newToolbar(): Toolbar {
         val toolbar = Toolbar(this)
-        toolbar.layoutParams = LinearLayout.LayoutParams(
-                MATCH_PARENT,
+        toolbar.layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
                 TypedValue.complexToDimensionPixelOffset(
                         this.dataForThemeAttribute(R.attr.actionBarSize),
                         this.resources.displayMetrics))
