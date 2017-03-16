@@ -1,17 +1,21 @@
 package org.nypl.linebylinedemo
 
 import android.os.Bundle
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.ViewGroup
 import android.webkit.WebView
+import android.webkit.WebViewClient
+import org.json.JSONObject
 
 class MainActivity : ToolbarActivity() {
 
     lateinit var webView: WebView
     lateinit var previousMenuItem: MenuItem
     lateinit var nextMenuItem: MenuItem
+    var document: LineByLineAccessibility.Document? = null
 
     init {
         WebView.setWebContentsDebuggingEnabled(true)
@@ -28,6 +32,14 @@ class MainActivity : ToolbarActivity() {
                 ViewGroup.LayoutParams.MATCH_PARENT)
         // Disable scrolling for demo purposes because we do not yet have snapping.
         this.webView.setOnTouchListener { _, event -> event.action == MotionEvent.ACTION_MOVE }
+        this.webView.setWebViewClient(object: WebViewClient() {
+            override fun onPageFinished(webView: WebView, url: String) {
+                webView.evaluateJavascript("processedDocument") { string ->
+                    this@MainActivity.document = LineByLineAccessibility.documentOfJSONObject(JSONObject(string))
+                }
+                return
+            }
+        })
         this.webView.settings.javaScriptEnabled = true
         this.webView.loadUrl("file:///android_asset/example.html")
         this.layout.addView(this.webView)
