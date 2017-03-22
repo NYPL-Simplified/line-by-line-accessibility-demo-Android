@@ -11,7 +11,28 @@ class LineByLineAccessibility {
 
     data class Line(val pageIndex: Int, val pageRelativeRectangle: Rectangle, val text: String)
 
-    data class Rectangle(val x: Double, val y: Double, val width: Double, val height: Double)
+    data class Rectangle(val x: Double, val y: Double, val width: Double, val height: Double) {
+
+        fun containsPoint(x: Double, y: Double): Boolean {
+            val n = this.normalized()
+            return n.x <= x && n.y <= y && n.x + n.width >= x && n.y + n.height >= y
+        }
+
+        fun normalized(): Rectangle {
+            if(this.width >= 0 && this.height >= 0) return this
+
+            return Rectangle(
+                    if(this.width >= 0) this.x else this.x + this.width,
+                    if(this.height >= 0) this.y else this.y + this.height,
+                    Math.abs(this.width),
+                    Math.abs(this.height)
+            )
+        }
+
+        companion object {
+            val zero = Rectangle(0.0, 0.0, 0.0, 0.0)
+        }
+    }
 
     companion object {
         fun documentOfJSONObject(documentObject: JSONObject): Document? {
