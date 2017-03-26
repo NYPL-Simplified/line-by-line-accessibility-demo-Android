@@ -131,13 +131,13 @@ class MainActivity : ToolbarActivity() {
     private fun accessibilityLineNumberForPoint(x: Double, y: Double): Int? {
         val document = this.document ?: return null
 
-        for(line in document.pages[this.currentPageIndex].lines.withIndex()) {
-            if(line.pageRelativeRect.contains(point) {
-                return i
+        document.pages[this.currentPageIndex].lines.withIndex().forEach { line ->
+            if(line.value.pageRelativeRectangle.containsPoint(x, y)) {
+                return line.index
             }
         }
 
-        return NSNotFound
+        return null
     }
 
     private fun accessibilityContentForLineNumber(lineNumber: Int): String? {
