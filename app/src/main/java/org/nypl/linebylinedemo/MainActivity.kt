@@ -2,11 +2,9 @@ package org.nypl.linebylinedemo
 
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
+import android.support.v4.view.GestureDetectorCompat
 import android.util.Log
-import android.view.Menu
-import android.view.MenuItem
-import android.view.MotionEvent
-import android.view.ViewGroup
+import android.view.*
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import org.json.JSONObject
@@ -18,6 +16,7 @@ class MainActivity : ToolbarActivity() {
     lateinit var nextMenuItem: MenuItem
     lateinit var readAloudMenuItem: MenuItem
     lateinit var textToSpeech: TextToSpeech
+    lateinit var gestureDetector: GestureDetectorCompat
     var currentPageIndex = 0
     var document: LineByLineAccessibility.Document? = null
     var isTextToSpeechReady = false
@@ -43,9 +42,14 @@ class MainActivity : ToolbarActivity() {
                     if(string != null) {
                         // We run this on the UI thread to avoid races on `document`.
                         runOnUiThread {
-                            this@MainActivity.document =
-                                    LineByLineAccessibility.documentOfJSONObject(JSONObject(string))
-                            this@MainActivity.supportInvalidateOptionsMenu()
+                            val documentObject = JSONObject(string)
+                            if(documentObject != null) {
+                                this@MainActivity.document =
+                                        LineByLineAccessibility.documentOfJSONObject(documentObject)
+                                this@MainActivity.supportInvalidateOptionsMenu()
+                            } else {
+                                Log.e(null, "Failed to parse document")
+                            }
                         }
                     }
                 }
@@ -55,6 +59,13 @@ class MainActivity : ToolbarActivity() {
         this.webView.settings.javaScriptEnabled = true
         this.webView.loadUrl("file:///android_asset/example.html")
         this.layout.addView(this.webView)
+
+        this.gestureDetector = GestureDetectorCompat(this, GestureListener(this))
+
+        this.webView.setOnTouchListener { _, event ->
+            this.gestureDetector.onTouchEvent(event)
+            true
+        }
 
         this.textToSpeech = TextToSpeech(this) { status: Int ->
             // We run this on the UI thread to avoid races on `isTextToSpeechReady`.
@@ -156,5 +167,26 @@ class MainActivity : ToolbarActivity() {
         val document = this.document ?: return null
 
         return document.pages[this.currentPageIndex].lines.map({it.text}).joinToString(separator = " ")
+    }
+
+    private class GestureListener(val mainActivity: MainActivity) : GestureDetector.SimpleOnGestureListener() {
+        // This needs to be implemented so it can return `true`. Without this,
+        // `onSingleTapUp` will never be called.
+        override fun onDown(e: MotionEvent?): Boolean {
+            return true
+        }
+
+        override fun onSingleTapUp(e: MotionEvent?): Boolean {
+            if(e == null) return false
+
+            val density = mainActivity.resources.displayMetrics.density
+
+            Log.d("line-tapped",
+                    mainActivity.accessibilityLineNumberForPoint(
+                            e.x.toDouble() / density,
+                            e.y.toDouble() / density).toString())
+
+            return true
+        }
     }
 }
