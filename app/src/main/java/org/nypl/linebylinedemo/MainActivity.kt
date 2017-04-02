@@ -2,24 +2,48 @@ package org.nypl.linebylinedemo
 
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
+import android.speech.tts.TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID
+import android.speech.tts.UtteranceProgressListener
 import android.support.v4.view.GestureDetectorCompat
 import android.util.Log
 import android.view.*
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import org.json.JSONObject
+import java.util.*
 
 class MainActivity : ToolbarActivity() {
 
+    val tag = this::class.simpleName
     lateinit var webView: WebView
     lateinit var previousMenuItem: MenuItem
     lateinit var nextMenuItem: MenuItem
     lateinit var readAloudMenuItem: MenuItem
     lateinit var textToSpeech: TextToSpeech
     lateinit var gestureDetector: GestureDetectorCompat
-    var currentPageIndex = 0
     var document: LineByLineAccessibility.Document? = null
+        set(value) {
+            field = value
+            this.supportInvalidateOptionsMenu()
+        }
     var isTextToSpeechReady = false
+        set(value) {
+            field = value
+            this.supportInvalidateOptionsMenu()
+        }
+    var currentPageIndex = 0
+        set(value) {
+            val document = this.document ?: return
+            if(value >= document.pages.count()) return
+            field = value
+            this.webView.scrollTo(this.webView.width * value, 0)
+            this.supportInvalidateOptionsMenu()
+        }
+    var isReadingContinuously = false
+        set(value) {
+            field = value
+            this.supportInvalidateOptionsMenu()
+        }
 
     init {
         WebView.setWebContentsDebuggingEnabled(true)
@@ -36,23 +60,27 @@ class MainActivity : ToolbarActivity() {
                 ViewGroup.LayoutParams.MATCH_PARENT)
         // Disable scrolling for demo purposes because we do not yet have snapping.
         this.webView.setOnTouchListener { _, event -> event.action == MotionEvent.ACTION_MOVE }
-        this.webView.setWebViewClient(object: WebViewClient() {
+        this.webView.setWebViewClient(object : WebViewClient() {
             override fun onPageFinished(webView: WebView, url: String) {
-                webView.evaluateJavascript("processedDocument") { string ->
-                    if(string != null) {
-                        // We run this on the UI thread to avoid races on `document`.
-                        runOnUiThread {
-                            val documentObject = JSONObject(string)
-                            if(documentObject != null) {
-                                this@MainActivity.document =
-                                        LineByLineAccessibility.documentOfJSONObject(documentObject)
-                                this@MainActivity.supportInvalidateOptionsMenu()
-                            } else {
-                                Log.e(null, "Failed to parse document")
+                // This is a hack: Normally, the JS would call a URL with the result once it was ready.
+                Timer().schedule(
+                        object: TimerTask() {
+                            override fun run() {
+                                runOnUiThread {
+                                    webView.evaluateJavascript("processedDocument") { string ->
+                                        if (string != null && string != "null") {
+                                            // We run this on the UI thread to avoid races on `document`.
+                                            val documentObject = JSONObject(string)
+                                            this@MainActivity.document =
+                                                    LineByLineAccessibility.documentOfJSONObject(documentObject)
+                                        }
+                                    }
+                                }
                             }
-                        }
-                    }
-                }
+                        },
+                        1000
+                )
+
                 return
             }
         })
@@ -70,51 +98,64 @@ class MainActivity : ToolbarActivity() {
         this.textToSpeech = TextToSpeech(this) { status: Int ->
             // We run this on the UI thread to avoid races on `isTextToSpeechReady`.
             runOnUiThread {
-                if(status == TextToSpeech.SUCCESS) {
+                if (status == TextToSpeech.SUCCESS) {
                     this.isTextToSpeechReady = true
-                    this.supportInvalidateOptionsMenu()
                 } else {
-                    Log.d(null, "Unable to initialize text-to-speech")
+                    Log.d(tag, "Unable to initialize text-to-speech")
                 }
             }
         }
+
+        this.textToSpeech.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+            override fun onDone(utteranceId: String) {
+                if (this@MainActivity.isReadingContinuously && this@MainActivity.canGoToNextPage()) {
+                    ++this@MainActivity.currentPageIndex
+                    val content = this@MainActivity.accessibilityPageContent()
+                    if (content != null) {
+                        this@MainActivity.speak(content)
+                    } else {
+                        this@MainActivity.isReadingContinuously = false
+                    }
+                }
+            }
+
+            override fun onError(utteranceId: String) {
+                Log.e(tag, "UtteranceProgressListener.onError: " + utteranceId)
+                this@MainActivity.isReadingContinuously = false
+            }
+
+            override fun onStart(utteranceId: String) {
+
+            }
+
+            override fun onStop(utteranceId: String, interrupted: Boolean) {
+                this@MainActivity.isReadingContinuously = false
+            }
+        })
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         this.previousMenuItem = menu.add("Previous")
         this.previousMenuItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
         this.previousMenuItem.setOnMenuItemClickListener {
-            this.webView.scrollBy(-this.webView.width, 0)
             --this.currentPageIndex
-            this.supportInvalidateOptionsMenu()
             true
         }
 
         this.nextMenuItem = menu.add("Next")
         this.nextMenuItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
         this.nextMenuItem.setOnMenuItemClickListener {
-            this.webView.scrollBy(this.webView.width, 0)
             ++this.currentPageIndex
-            this.supportInvalidateOptionsMenu()
             true
         }
 
         val readAloudMenuItem = menu.add("Read Aloud")
         readAloudMenuItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW)
         readAloudMenuItem.setOnMenuItemClickListener {
-            // This menu item is only enabled if `this.document != null`.
-            if(android.os.Build.VERSION.SDK_INT >= 21) {
-                this.textToSpeech.speak(
-                        this.document!!.pages[this.currentPageIndex].lines[0].text,
-                        TextToSpeech.QUEUE_FLUSH,
-                        null,
-                        "")
-
-            } else {
-                this.textToSpeech.speak(
-                        this.document!!.pages[this.currentPageIndex].lines[0].text,
-                        TextToSpeech.QUEUE_FLUSH,
-                        null)
+            val content = this.accessibilityPageContent()
+            if (content != null) {
+                this@MainActivity.isReadingContinuously = true
+                this.speak(content)
             }
             true
         }
@@ -123,10 +164,22 @@ class MainActivity : ToolbarActivity() {
         return true
     }
 
+    private fun canGoToNextPage(): Boolean {
+        val document = this.document ?: return false
+
+        return this.currentPageIndex < document.pages.count() - 1
+    }
+
     override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
         val document = this.document
 
-        if(document == null) {
+        if (this.isReadingContinuously) {
+            this.readAloudMenuItem.title = "Stop Reading"
+        } else {
+            this.readAloudMenuItem.title = "Read Aloud"
+        }
+
+        if (document == null) {
             this.previousMenuItem.isEnabled = false
             this.nextMenuItem.isEnabled = false
             this.readAloudMenuItem.isEnabled = false
@@ -143,7 +196,7 @@ class MainActivity : ToolbarActivity() {
         val document = this.document ?: return null
 
         document.pages[this.currentPageIndex].lines.withIndex().forEach { line ->
-            if(line.value.pageRelativeRectangle.containsPoint(x, y)) {
+            if (line.value.pageRelativeRectangle.containsPoint(x, y)) {
                 return line.index
             }
         }
@@ -166,7 +219,7 @@ class MainActivity : ToolbarActivity() {
     private fun accessibilityPageContent(): String? {
         val document = this.document ?: return null
 
-        return document.pages[this.currentPageIndex].lines.map({it.text}).joinToString(separator = " ")
+        return document.pages[this.currentPageIndex].lines.map({ it.text }).joinToString(separator = " ")
     }
 
     private class GestureListener(val mainActivity: MainActivity) : GestureDetector.SimpleOnGestureListener() {
@@ -177,7 +230,7 @@ class MainActivity : ToolbarActivity() {
         }
 
         override fun onSingleTapUp(e: MotionEvent?): Boolean {
-            if(e == null) return false
+            if (e == null) return false
 
             val density = mainActivity.resources.displayMetrics.density
 
@@ -189,4 +242,12 @@ class MainActivity : ToolbarActivity() {
             return true
         }
     }
+
+    private fun speak(string: String) {
+        this.textToSpeech.speak(
+                string,
+                TextToSpeech.QUEUE_FLUSH,
+                hashMapOf(KEY_PARAM_UTTERANCE_ID to UUID.randomUUID().toString()))
+    }
 }
+
