@@ -121,6 +121,8 @@ class MainActivity : ToolbarActivity() {
                     } else {
                         this@MainActivity.isReadingContinuously = false
                     }
+                } else {
+                    this@MainActivity.isReadingContinuously = false
                 }
             }
 
