@@ -33,10 +33,14 @@ class MainActivity : ToolbarActivity() {
         }
     var currentPageIndex = 0
         set(value) {
+            if(value == this.currentPageIndex) return
             val document = this.document ?: return
             if(value >= document.pages.count()) return
             field = value
             this.webView.scrollTo(this.webView.width * value, 0)
+            if(this.isReadingContinuously) {
+                this.speakCurrentPage()
+            }
             this.supportInvalidateOptionsMenu()
             Log.d("currentPageIndex", value.toString())
         }
@@ -121,8 +125,7 @@ class MainActivity : ToolbarActivity() {
             }
 
             override fun onError(utteranceId: String) {
-                Log.e(tag, "UtteranceProgressListener.onError: " + utteranceId)
-                this@MainActivity.isReadingContinuously = false
+
             }
 
             override fun onStart(utteranceId: String) {
@@ -130,7 +133,7 @@ class MainActivity : ToolbarActivity() {
             }
 
             override fun onStop(utteranceId: String, interrupted: Boolean) {
-                this@MainActivity.isReadingContinuously = false
+
             }
         })
     }
@@ -253,6 +256,11 @@ class MainActivity : ToolbarActivity() {
                 string,
                 TextToSpeech.QUEUE_FLUSH,
                 hashMapOf(KEY_PARAM_UTTERANCE_ID to UUID.randomUUID().toString()))
+    }
+
+    private fun speakCurrentPage() {
+        val content = this.accessibilityPageContent() ?: return
+        this.speak(content)
     }
 }
 
