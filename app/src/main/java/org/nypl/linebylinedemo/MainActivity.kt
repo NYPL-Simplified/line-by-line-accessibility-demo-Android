@@ -38,6 +38,7 @@ class MainActivity : ToolbarActivity() {
             field = value
             this.webView.scrollTo(this.webView.width * value, 0)
             this.supportInvalidateOptionsMenu()
+            Log.d("currentPageIndex", value.toString())
         }
     var isReadingContinuously = false
         set(value) {
@@ -149,13 +150,17 @@ class MainActivity : ToolbarActivity() {
             true
         }
 
-        val readAloudMenuItem = menu.add("Read Aloud")
+        val readAloudMenuItem = menu.add("")
         readAloudMenuItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW)
         readAloudMenuItem.setOnMenuItemClickListener {
             val content = this.accessibilityPageContent()
             if (content != null) {
-                this@MainActivity.isReadingContinuously = true
-                this.speak(content)
+                this@MainActivity.isReadingContinuously = !this@MainActivity.isReadingContinuously
+                if(this@MainActivity.isReadingContinuously) {
+                    this.speak(content)
+                } else {
+                    this@MainActivity.textToSpeech.stop()
+                }
             }
             true
         }
