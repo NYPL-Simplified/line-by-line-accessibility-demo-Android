@@ -37,7 +37,8 @@ class MainActivity : ToolbarActivity() {
             val document = this.document ?: return
             if(value >= document.pages.count()) return
             field = value
-            this.webView.scrollTo(this.webView.width * value, 0)
+            // We use this hack for now due to lack of proper pagination.
+            this.webView.scrollTo(this.webView.width * value + (value * 1.5).toInt(), 0)
             if(this.isReadingContinuously) {
                 this.speakCurrentPage()
             }
