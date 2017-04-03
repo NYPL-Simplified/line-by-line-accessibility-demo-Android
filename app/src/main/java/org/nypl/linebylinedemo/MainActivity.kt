@@ -162,6 +162,8 @@ class MainActivity : ToolbarActivity() {
         val readAloudMenuItem = menu.add("")
         readAloudMenuItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW)
         readAloudMenuItem.setOnMenuItemClickListener {
+            // FIXME: This should advance to the next page with content, not simply give up if there is
+            // nothing to read on the current page.
             val content = this.accessibilityPageContent()
             if (content != null) {
                 this@MainActivity.isReadingContinuously = !this@MainActivity.isReadingContinuously
