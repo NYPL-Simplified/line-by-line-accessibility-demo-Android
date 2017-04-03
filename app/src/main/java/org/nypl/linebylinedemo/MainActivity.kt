@@ -14,42 +14,45 @@ import java.util.*
 
 class MainActivity : ToolbarActivity() {
 
-    val tag = this::class.simpleName
-    lateinit var webView: WebView
-    lateinit var previousMenuItem: MenuItem
-    lateinit var nextMenuItem: MenuItem
-    lateinit var readAloudMenuItem: MenuItem
-    lateinit var textToSpeech: TextToSpeech
-    lateinit var gestureDetector: GestureDetectorCompat
-    var document: LineByLineAccessibility.Document? = null
+    private val tag = this::class.simpleName
+    private lateinit var webView: WebView
+    private lateinit var previousMenuItem: MenuItem
+    private lateinit var nextMenuItem: MenuItem
+    private lateinit var readAloudMenuItem: MenuItem
+    private lateinit var textToSpeech: TextToSpeech
+    private lateinit var gestureDetector: GestureDetectorCompat
+
+    private var document: LineByLineAccessibility.Document? = null
         set(value) {
             field = value
             this.supportInvalidateOptionsMenu()
         }
-    var isTextToSpeechReady = false
+    private var isTextToSpeechReady = false
         set(value) {
             field = value
             this.supportInvalidateOptionsMenu()
         }
-    var currentPageIndex = 0
+    private var currentPageIndex = 0
         set(value) {
             if(value == this.currentPageIndex) return
             val document = this.document ?: return
             if(value >= document.pages.count()) return
             field = value
+            this.lastLineIndexTouchedOnCurrentPage = 0
             // We use this hack for now due to lack of proper pagination.
             this.webView.scrollTo(this.webView.width * value + (value * 1.5).toInt(), 0)
             if(this.isReadingContinuously) {
-                this.speakCurrentPage()
+                this.readAloud()
             }
             this.supportInvalidateOptionsMenu()
             Log.d("currentPageIndex", value.toString())
         }
-    var isReadingContinuously = false
+    private var isReadingContinuously = false
         set(value) {
             field = value
             this.supportInvalidateOptionsMenu()
         }
+    private var lastLineIndexTouchedOnCurrentPage: Int = 0
 
     init {
         WebView.setWebContentsDebuggingEnabled(true)
@@ -163,7 +166,7 @@ class MainActivity : ToolbarActivity() {
             if (content != null) {
                 this@MainActivity.isReadingContinuously = !this@MainActivity.isReadingContinuously
                 if(this@MainActivity.isReadingContinuously) {
-                    this.speak(content)
+                    this.readAloud()
                 } else {
                     this@MainActivity.textToSpeech.stop()
                 }
@@ -233,6 +236,17 @@ class MainActivity : ToolbarActivity() {
         return document.pages[this.currentPageIndex].lines.map({ it.text }).joinToString(separator = " ")
     }
 
+    private fun accessibilityPageContentFromLineNumber(lineNumber: Int): String? {
+        val document = this.document ?: return null
+
+        val count = document.pages[this.currentPageIndex].lines.count()
+        if(lineNumber >= count) return null
+
+        val lines = document.pages[this.currentPageIndex].lines.subList(lineNumber, count)
+
+        return lines.map({ it.text }).joinToString(separator = " ")
+    }
+
     private class GestureListener(val mainActivity: MainActivity) : GestureDetector.SimpleOnGestureListener() {
         // This needs to be implemented so it can return `true`. Without this,
         // `onSingleTapUp` will never be called.
@@ -244,11 +258,15 @@ class MainActivity : ToolbarActivity() {
             if (e == null) return false
 
             val density = mainActivity.resources.displayMetrics.density
+            val lineIndex = mainActivity.accessibilityLineNumberForPoint(
+                    e.x.toDouble() / density,
+                    e.y.toDouble() / density)
 
-            Log.d("line-tapped",
-                    mainActivity.accessibilityLineNumberForPoint(
-                            e.x.toDouble() / density,
-                            e.y.toDouble() / density).toString())
+            if(lineIndex != null) {
+                mainActivity.isReadingContinuously = false
+                mainActivity.speak(mainActivity.accessibilityContentForLineNumber(lineIndex)!!)
+                mainActivity.lastLineIndexTouchedOnCurrentPage = lineIndex
+            }
 
             return true
         }
@@ -261,8 +279,9 @@ class MainActivity : ToolbarActivity() {
                 hashMapOf(KEY_PARAM_UTTERANCE_ID to UUID.randomUUID().toString()))
     }
 
-    private fun speakCurrentPage() {
-        val content = this.accessibilityPageContent() ?: return
+    private fun readAloud() {
+        val content = this.accessibilityPageContentFromLineNumber(
+                this.lastLineIndexTouchedOnCurrentPage) ?: return
         this.speak(content)
     }
 }
